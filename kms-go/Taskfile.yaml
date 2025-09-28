@@ -1,0 +1,45 @@
+version: "3"
+
+tasks:
+  default:
+    cmds:
+      - task -l --sort none
+    silent: true
+
+  build:release:
+    desc: Build the release version of the go-api container
+    cmds:
+      - |
+        docker buildx build \
+          --platform linux/amd64 \
+          --tag {{.REGION}}-docker.pkg.dev/{{.PROJECT_ID_PREFIX}}-service/api-repo/{{.IMAGE_NAME}}:latest \
+          ./go
+        echo "Release version of go-api container built successfully"
+    silent: true
+
+  push:release:
+    desc: Push the release version of the go-api container to Google Cloud artifact repository
+    cmds:
+      - |
+        docker push {{.REGION}}-docker.pkg.dev/{{.PROJECT_ID_PREFIX}}-service/api-repo/{{.IMAGE_NAME}}:latest
+        echo "Release version of go-api container pushed successfully"
+    silent: true
+
+  deploy:release:
+    desc: Deploy the release version of the go-api container to Google Cloud Run
+    cmds:
+      - |
+        gcloud run deploy api \
+          --image {{.REGION}}-docker.pkg.dev/{{.PROJECT_ID_PREFIX}}-service/api-repo/{{.IMAGE_NAME}}:latest \
+          --region {{.REGION}} \
+          --project {{.PROJECT_ID_PREFIX}}-service
+        echo "Release version of go-api container deployed successfully"
+    silent: true
+
+  release:
+    desc: Build, push, and deploy the release version of the go-api container
+    cmds:
+      - task: build:release
+      - task: push:release
+      - task: deploy:release
+    silent: true

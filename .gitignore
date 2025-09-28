@@ -48,11 +48,13 @@ next-env.d.ts
 # work
 memo
 logs/
+tmp/
 air_tmp
 dump-code*.*
 code-dump*.*
 !dump-code.py
 cloud-sql-proxy
+*.local.md
 
 # Terraform
 **/.terraform/*
