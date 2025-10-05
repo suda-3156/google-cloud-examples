@@ -73,3 +73,6 @@ crash.*.log
 terraform.rc
 # since this repo is for examples
 .terraform.lock.hcl
+
+# cloud deploy
+artifacts.json

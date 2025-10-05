@@ -1,0 +1,16 @@
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: app
+  annotations:
+    run.googleapis.com/invoker-iam-disabled: "true"
+spec:
+  template:
+    spec:
+      serviceAccountName: dummy # from-param: ${service_account_name}
+      containers:
+        - name: app
+          image: app
+          env:
+            - name: MESSAGE
+              value: dummy # from-param: ${message}

@@ -1,0 +1,115 @@
+version: "3"
+
+tasks:
+  default:
+    cmds:
+      - task -l --sort none
+    silent: true
+
+  init:
+    desc: Initialize for Cloud Deploy
+    cmds:
+      - |
+        gcloud iam service-accounts add-iam-policy-binding \
+          "projects/{{.PROJECT_ID_PREFIX}}-pipeline/serviceAccounts/releaser@{{.PROJECT_ID_PREFIX}}-pipeline.iam.gserviceaccount.com" \
+          --member "user:$(gcloud config get account)" \
+          --role roles/iam.serviceAccountTokenCreator
+        gcloud iam service-accounts add-iam-policy-binding \
+          "projects/{{.PROJECT_ID_PREFIX}}-pipeline/serviceAccounts/stg-promoter@{{.PROJECT_ID_PREFIX}}-pipeline.iam.gserviceaccount.com" \
+          --member "user:$(gcloud config get account)" \
+          --role roles/iam.serviceAccountTokenCreator
+        gcloud iam service-accounts add-iam-policy-binding \
+          "projects/{{.PROJECT_ID_PREFIX}}-pipeline/serviceAccounts/prod-promoter@{{.PROJECT_ID_PREFIX}}-pipeline.iam.gserviceaccount.com" \
+          --member "user:$(gcloud config get account)" \
+          --role roles/iam.serviceAccountTokenCreator
+    requires:
+      vars: [PROJECT_ID_PREFIX]
+
+  build:
+    desc: "Build the container image and push to Artifact Registry \t usage: task build APP_VERSION=\"1.0.0\""
+    dir: ./deploy
+    vars:
+      APP_VERSION: "{{.APP_VERSION}}"
+    cmds:
+      - |
+        if [ -z "{{.APP_VERSION}}" ]; then
+          echo "APP_VERSION is not set. Please set APP_VERSION environment variable."
+          exit 1
+        fi
+        echo "Building version: {{.APP_VERSION}}"
+        gcloud config set auth/impersonate_service_account "releaser@{{.PROJECT_ID_PREFIX}}-pipeline.iam.gserviceaccount.com"
+        export APP_VERSION="{{.APP_VERSION}}"
+        skaffold build \
+          --filename skaffold.yaml \
+          --default-repo "{{.REGION}}-docker.pkg.dev/{{.PROJECT_ID_PREFIX}}-pipeline/pipeline-repo" \
+          --file-output artifacts.json
+        gcloud config unset auth/impersonate_service_account
+    requires:
+      vars: [PROJECT_ID_PREFIX, REGION, APP_VERSION]
+
+  deploy:dev:
+    desc: "Deploy to dev environment \t usage: task deploy:dev RELEASE_NAME=v1-0-0"
+    dir: ./deploy
+    vars:
+      RELEASE_NAME: "{{.RELEASE_NAME}}"
+    cmds:
+      - |
+        if [ -z "{{.RELEASE_NAME}}" ]; then
+          echo "RELEASE_NAME is not set. Please set RELEASE_NAME environment variable."
+          exit 1
+        fi
+        echo "Creating release: {{.RELEASE_NAME}}"
+        gcloud config set project "{{.PROJECT_ID_PREFIX}}-pipeline"
+        gcloud deploy releases create "{{.RELEASE_NAME}}" \
+          --region="{{.REGION}}" \
+          --delivery-pipeline="app-pipeline" \
+          --gcs-source-staging-dir "gs://{{.PROJECT_ID_PREFIX}}-pipeline-storage/app/source" \
+          --build-artifacts artifacts.json \
+          --skaffold-file skaffold.yaml \
+          --enable-initial-rollout \
+          --impersonate-service-account "releaser@{{.PROJECT_ID_PREFIX}}-pipeline.iam.gserviceaccount.com"
+        gcloud config unset project
+    requires:
+      vars: [PROJECT_ID_PREFIX, REGION]
+
+  deploy:stg:
+    desc: "Promote to staging environment \t usage: task deploy:stg RELEASE_NAME=v1-0-0"
+    vars:
+      RELEASE_NAME: "{{.RELEASE_NAME}}"
+    cmds:
+      - |
+        if [ -z "{{.RELEASE_NAME}}" ]; then
+          echo "RELEASE_NAME is not set. Please set RELEASE_NAME environment variable."
+          exit 1
+        fi
+        echo "Promoting release: {{.RELEASE_NAME}} to staging"
+        gcloud config set project "{{.PROJECT_ID_PREFIX}}-pipeline"
+        gcloud deploy releases promote \
+          --release "{{.RELEASE_NAME}}" \
+          --delivery-pipeline="app-pipeline" \
+          --region="{{.REGION}}" \
+          --impersonate-service-account "stg-promoter@{{.PROJECT_ID_PREFIX}}-pipeline.iam.gserviceaccount.com"
+        gcloud config unset project
+    requires:
+      vars: [PROJECT_ID_PREFIX, REGION]
+
+  deploy:prod:
+    desc: "Promote to production environment \t usage: task deploy:prod RELEASE_NAME=v1-0-0"
+    vars:
+      RELEASE_NAME: "{{.RELEASE_NAME}}"
+    cmds:
+      - |
+        if [ -z "{{.RELEASE_NAME}}" ]; then
+          echo "RELEASE_NAME is not set. Please set RELEASE_NAME environment variable."
+          exit 1
+        fi
+        echo "Promoting release: {{.RELEASE_NAME}} to production"
+        gcloud config set project "{{.PROJECT_ID_PREFIX}}-pipeline"
+        gcloud deploy releases promote \
+          --release "{{.RELEASE_NAME}}" \
+          --delivery-pipeline="app-pipeline" \
+          --region="{{.REGION}}" \
+          --impersonate-service-account "prod-promoter@{{.PROJECT_ID_PREFIX}}-pipeline.iam.gserviceaccount.com"
+        gcloud config unset project
+    requires:
+      vars: [PROJECT_ID_PREFIX, REGION]

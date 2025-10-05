@@ -25,8 +25,8 @@ RUN --mount=type=cache,target=/go/pkg/mod/ \
 FROM scratch
 
 # ENV TZ=Asia/Tokyo
-# ARG app_version=v0.0.0
-# ENV APP_VERSION=$app_version
+ARG app_version=v0.0.0
+ENV APP_VERSION=$app_version
 
 COPY --from=builder /bin/server /bin/server
 

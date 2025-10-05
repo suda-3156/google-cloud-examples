@@ -1,0 +1,23 @@
+apiVersion: skaffold/v4beta7
+kind: Config
+metadata:
+  name: app
+build:
+  tagPolicy:
+    envTemplate:
+      template: "{{ .APP_VERSION }}"
+  artifacts:
+    - image: app
+      context: ../go
+      docker:
+        buildArgs:
+          app_version: "{{ .APP_VERSION }}"
+        dockerfile: ../go/Dockerfile
+  local:
+    useBuildkit: true
+    push: true
+deploy:
+  cloudrun: {}
+manifests:
+  rawYaml:
+    - manifest.yaml
