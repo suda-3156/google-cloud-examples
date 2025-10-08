@@ -37,7 +37,7 @@ For more details, refer to [Troubleshooting SSL certificates](https://cloud.goog
 gcloud compute ssl-certificates list --project ${PROJECT_ID_PREFIX}-service
 
 # Describe certificate status
-gcloud compute ssl-certificates describe ${PROJECT_ID_PREFIX}-lb-ssl-cert \
+gcloud compute ssl-certificates describe lb-ssl-cert \
    --global \
    --format="get(name,managed.status, managed.domainStatus)" \
    --project ${PROJECT_ID_PREFIX}-service
@@ -56,14 +56,14 @@ gcloud projects delete ${PROJECT_ID_PREFIX}-tf
 To reserve a global static IP address using `gcloud`:
 
 ```sh
-gcloud compute addresses create ${PROJECT_ID_PREFIX}-lb-ip \
+gcloud compute addresses create lb-static-ip \
   --network-tier=PREMIUM \
   --ip-version=IPV4 \
   --global \
   --project ${PROJECT_ID_PREFIX}-service
 
 # To delete the address:
-gcloud compute addresses delete ${PROJECT_ID_PREFIX}-lb-ip \
+gcloud compute addresses delete lb-static-ip \
   --global \
   --project ${PROJECT_ID_PREFIX}-service
 ```
