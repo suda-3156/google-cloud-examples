@@ -1,3 +1,4 @@
 [submodule "cloud-deploy/github-integration"]
 	path = cloud-deploy/github-integration
-	url = git@github.com:suda-3156/cloud-deploy-serial-github.git
+	url = https://github.com/suda-3156/cloud-deploy-serial-github.git
+	branch = dev
