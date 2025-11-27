@@ -2,7 +2,3 @@
 	path = cloud-deploy/github-integration
 	url = https://github.com/suda-3156/cloud-deploy-serial-github.git
 	branch = dev
-[submodule "integrations/cloud-deploy-db-migration"]
-	path = integrations/cloud-deploy-db-migration
-	url = https://github.com/suda-3156/cloud-deploy-db-migration.git
-	branch = dev
